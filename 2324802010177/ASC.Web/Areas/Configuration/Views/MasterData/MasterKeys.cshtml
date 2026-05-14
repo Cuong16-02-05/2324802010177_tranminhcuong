@@ -1,0 +1,170 @@
+@model ASC.Web.Areas.Configuration.Models.MasterKeysViewModel
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Master Keys";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h4 class="brown-text"><i class="material-icons left">vpn_key</i>Master Data Keys</h4>
+        <p class="grey-text">Quản lý danh mục dữ liệu cấu hình hệ thống</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="row"><div class="col s12">
+        <div class="card-panel green lighten-4 green-text text-darken-2 auto-dismiss">
+            <i class="material-icons tiny">check_circle</i> @TempData["Success"]
+        </div>
+    </div></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="row"><div class="col s12">
+        <div class="card-panel red lighten-4 red-text text-darken-2">
+            <i class="material-icons tiny">error</i> @TempData["Error"]
+        </div>
+    </div></div>
+}
+
+<div class="row">
+    <!-- Form thêm/sửa -->
+    <div class="col s12 m4">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Thêm / Cập nhật Key</span>
+                <form asp-action="MasterKeys" method="post" id="keyForm">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="MasterDataKey.UniqueId" type="hidden" id="KeyUniqueId" />
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">label</i>
+                        <input asp-for="MasterDataKey.Name" id="KeyName" class="validate" required />
+                        <label asp-for="MasterDataKey.Name" for="KeyName">
+                            Key Name (VD: ServiceType, VehicleBrand)
+                        </label>
+                        <span asp-validation-for="MasterDataKey.Name" class="red-text helper-text"></span>
+                    </div>
+
+                    <div style="margin:10px 0">
+                        <label>
+                            <input asp-for="MasterDataKey.IsActive" type="checkbox" id="KeyIsActive" checked />
+                            <span>Active</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top:15px">
+                        <button type="submit" class="btn brown darken-2 waves-effect" style="width:100%">
+                            <i class="material-icons left">save</i>Lưu
+                        </button>
+                        <button type="button" class="btn-flat waves-effect"
+                            style="width:100%;margin-top:5px" onclick="resetKeyForm()">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách Keys với DataTables -->
+    <div class="col s12 m8">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Danh sách Master Keys</span>
+                <table id="keyTable" class="stripe hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Key Name</th>
+                            <th>Trạng thái</th>
+                            <th>Tạo bởi</th>
+                            <th>Ngày tạo</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var key in Model.MasterDataKeys)
+                        {
+                            <tr>
+                                <td>
+                                    <a href="/Configuration/MasterData/MasterValues?keyId=@key.UniqueId&keyName=@key.Name"
+                                       class="brown-text" style="font-weight:500">
+                                        <i class="material-icons tiny">folder_open</i> @key.Name
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge @(key.IsActive ? "green" : "grey") white-text new">
+                                        @(key.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>@key.CreatedBy</td>
+                                <td>@key.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <button class="btn-small brown waves-effect"
+                                        onclick="editKey('@key.UniqueId','@key.Name',@key.IsActive.ToString().ToLower())"
+                                        title="Sửa">
+                                        <i class="material-icons">edit</i>
+                                    </button>
+                                    <a href="/Configuration/MasterData/MasterValues?keyId=@key.UniqueId&keyName=@key.Name"
+                                       class="btn-small blue waves-effect" title="Xem Values">
+                                        <i class="material-icons">list</i>
+                                    </a>
+                                    <form asp-action="ToggleMasterKey" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@key.UniqueId" />
+                                        <input type="hidden" name="name" value="@key.Name" />
+                                        <input type="hidden" name="isActive" value="@key.IsActive" />
+                                        <button type="submit" class="btn-small @(key.IsActive ? "orange" : "green") waves-effect"
+                                            title="@(key.IsActive ? "Deactivate" : "Activate")">
+                                            <i class="material-icons">@(key.IsActive ? "visibility_off" : "visibility")</i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (!Model.MasterDataKeys.Any())
+                {
+                    <p class="center-align grey-text" style="padding:20px">
+                        Chưa có Master Key nào. Hãy tạo key đầu tiên!
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($('#keyTable tbody tr').length > 0) {
+                $('#keyTable').DataTable({
+                    language: {
+                        search: "Tìm kiếm:",
+                        lengthMenu: "Hiển thị _MENU_ dòng",
+                        info: "Hiển thị _START_ đến _END_ / _TOTAL_ dòng",
+                        paginate: { previous: "Trước", next: "Sau" }
+                    }
+                });
+            }
+        });
+
+        function editKey(id, name, isActive) {
+            document.getElementById('KeyUniqueId').value = id;
+            document.getElementById('KeyName').value = name;
+            document.getElementById('KeyIsActive').checked = isActive === 'true';
+            M.updateTextFields();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetKeyForm() {
+            document.getElementById('KeyUniqueId').value = '';
+            document.getElementById('KeyName').value = '';
+            document.getElementById('KeyIsActive').checked = true;
+            M.updateTextFields();
+        }
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

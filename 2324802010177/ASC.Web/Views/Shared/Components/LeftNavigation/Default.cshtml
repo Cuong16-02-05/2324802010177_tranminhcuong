@@ -1,0 +1,47 @@
+@using ASC.Web.Infrastructure
+@model List<MenuItem>
+
+@if (Model != null)
+{
+    <ul class="collapsible" data-collapsible="accordion">
+        @foreach (var item in Model)
+        {
+            if (item.IsNested && item.NestedItems.Any())
+            {
+                <li>
+                    <div class="collapsible-header waves-effect">
+                        <i class="material-icons">@item.MaterialIcon</i>@item.DisplayName
+                    </div>
+                    <div class="collapsible-body">
+                        <ul>
+                            @foreach (var nested in item.NestedItems.OrderBy(n => n.Sequence))
+                            {
+                                <li><a href="@nested.Link">
+                                    <i class="material-icons">@nested.MaterialIcon</i>@nested.DisplayName
+                                </a></li>
+                            }
+                        </ul>
+                    </div>
+                </li>
+            }
+            else if (item.DisplayName == "Logout")
+            {
+                <li>
+                    <div class="collapsible-header waves-effect">
+                        <i class="material-icons">@item.MaterialIcon</i>
+                        <a id="ancrLogout" href="#!">@item.DisplayName</a>
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li>
+                    <div class="collapsible-header waves-effect">
+                        <i class="material-icons">@item.MaterialIcon</i>
+                        <a href="@item.Link">@item.DisplayName</a>
+                    </div>
+                </li>
+            }
+        }
+    </ul>
+}

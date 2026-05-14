@@ -1,0 +1,204 @@
+@model List<ASC.Model.MasterDataValue>
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Dịch vụ & Bảng giá";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h4 class="brown-text">
+            <i class="material-icons left">build</i>Dịch vụ & Bảng giá tham khảo
+        </h4>
+        <p class="grey-text">Giá niêm yết chỉ mang tính tham khảo. Giá thực tế có thể thay đổi tùy tình trạng xe.</p>
+    </div>
+</div>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="row">
+        <div class="col s12">
+            <div class="card blue-grey lighten-4">
+                <div class="card-content center">
+                    <i class="material-icons large grey-text">info_outline</i>
+                    <p class="grey-text">Chưa có dịch vụ nào. Admin vui lòng thêm dịch vụ trong mục Master Data.</p>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a href="/Configuration/MasterData/MasterKeys" class="btn brown darken-2 waves-effect">
+                            <i class="material-icons left">settings</i>Quản lý Master Data
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Stats summary -->
+    <div class="row">
+        <div class="col s12 m4">
+            <div class="card-panel brown darken-2 white-text center" style="border-radius:8px;padding:16px;">
+                <i class="material-icons medium">build</i>
+                <h5 style="margin:4px 0;">@Model.Count</h5>
+                <p style="margin:0;font-size:13px;">Dịch vụ hiện có</p>
+            </div>
+        </div>
+        <div class="col s12 m4">
+            <div class="card-panel teal darken-1 white-text center" style="border-radius:8px;padding:16px;">
+                <i class="material-icons medium">attach_money</i>
+                <h5 style="margin:4px 0;">@(Model.Where(s => s.Price.HasValue).Min(s => s.Price)?.ToString("N0")) ₫</h5>
+                <p style="margin:0;font-size:13px;">Giá từ</p>
+            </div>
+        </div>
+        <div class="col s12 m4">
+            <div class="card-panel blue-grey darken-1 white-text center" style="border-radius:8px;padding:16px;">
+                <i class="material-icons medium">star</i>
+                <h5 style="margin:4px 0;">@Model.Count(s => !s.Price.HasValue)</h5>
+                <p style="margin:0;font-size:13px;">Dịch vụ thỏa thuận</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng dịch vụ dạng card grid -->
+    <div class="row" id="serviceGrid">
+        @foreach (var svc in Model)
+        {
+            <div class="col s12 m6 l4 service-card-col">
+                <div class="card hoverable" style="border-left: 4px solid #4e342e; border-radius:4px;">
+                    <div class="card-content" style="padding:16px 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <span class="card-title" style="font-size:15px; font-weight:600; margin-bottom:6px; display:block;">
+                                    <i class="material-icons tiny brown-text" style="vertical-align:middle;">check_circle</i>
+                                    @svc.Name
+                                </span>
+                            </div>
+                            <div style="text-align:right; flex-shrink:0; margin-left:10px;">
+                                @if (svc.Price.HasValue)
+                                {
+                                    <span class="brown-text" style="font-size:17px; font-weight:700;">
+                                        @svc.Price.Value.ToString("N0") ₫
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="teal-text" style="font-size:14px; font-weight:600;">
+                                        Thỏa thuận
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <a href="/ServiceRequests/ServiceRequest/ServiceRequest"
+                               class="btn-small brown darken-2 waves-effect" style="font-size:11px;">
+                                <i class="material-icons tiny left">add</i>Đặt lịch
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Tìm kiếm nhanh -->
+    <div class="row">
+        <div class="col s12">
+            <div class="input-field">
+                <i class="material-icons prefix">search</i>
+                <input id="searchService" type="text" placeholder="Tìm dịch vụ..." />
+                <label for="searchService">Tìm kiếm dịch vụ</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng đầy đủ -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Bảng giá chi tiết</span>
+                    <table id="pricingTable" class="striped highlight" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tên dịch vụ</th>
+                                <th>Giá tham khảo</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Count; i++)
+                            {
+                                var svc = Model[i];
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td><strong>@svc.Name</strong></td>
+                                    <td>
+                                        @if (svc.Price.HasValue)
+                                        {
+                                            <span class="brown-text" style="font-weight:600;">
+                                                @svc.Price.Value.ToString("N0") ₫
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="teal-text">Thỏa thuận</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="/ServiceRequests/ServiceRequest/ServiceRequest"
+                                           class="btn-small brown waves-effect waves-light">
+                                            <i class="material-icons tiny">add</i> Đặt lịch
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="row">
+            <div class="col s12">
+                <div class="card-panel blue lighten-4 blue-text text-darken-2">
+                    <i class="material-icons tiny">info</i>
+                    <strong>Admin:</strong> Để thêm/sửa dịch vụ và giá, vào
+                    <a href="/Configuration/MasterData/MasterKeys" class="blue-text">
+                        Master Data → ServiceType
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($('#pricingTable tbody tr').length > 0) {
+                $('#pricingTable').DataTable({
+                    pageLength: 10,
+                    language: {
+                        search: "Tìm kiếm:",
+                        lengthMenu: "Hiển thị _MENU_ dòng",
+                        info: "_START_ - _END_ / _TOTAL_ dịch vụ",
+                        paginate: { previous: "Trước", next: "Sau" }
+                    }
+                });
+            }
+
+            // Tìm kiếm realtime cho card grid
+            $('#searchService').on('keyup', function () {
+                var q = $(this).val().toLowerCase();
+                $('.service-card-col').each(function () {
+                    var name = $(this).find('.card-title').text().toLowerCase();
+                    $(this).toggle(name.includes(q));
+                });
+            });
+        });
+    </script>
+}

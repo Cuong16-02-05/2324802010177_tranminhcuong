@@ -1,0 +1,42 @@
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Create Service Engineer";
+}
+
+<div class="row">
+    <div class="col s12"><h4 class="brown-text">Create Service Engineer</h4></div>
+</div>
+
+<div class="row">
+    <div class="col s12 m6 offset-m3">
+        <div class="card">
+            <div class="card-content">
+                <form asp-action="CreateEngineer" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="red-text"></div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">person</i>
+                        <input name="firstName" type="text" id="firstName" class="validate" required />
+                        <label for="firstName">First Name</label>
+                    </div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input name="email" type="email" id="email" class="validate" required />
+                        <label for="email">Email Address</label>
+                    </div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">lock</i>
+                        <input name="password" type="password" id="password" class="validate" required />
+                        <label for="password">Password (min 6 chars, 1 digit)</label>
+                    </div>
+                    <div style="margin-top:20px">
+                        <button type="submit" class="btn brown darken-2 waves-effect">
+                            <i class="material-icons left">person_add</i>Create Engineer
+                        </button>
+                        <a href="/Accounts/Account/ServiceEngineers" class="btn-flat">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

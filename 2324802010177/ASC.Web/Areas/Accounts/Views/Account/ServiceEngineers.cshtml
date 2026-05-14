@@ -1,0 +1,147 @@
+@model ASC.Web.Areas.Accounts.Models.ServiceEngineerViewModel
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Service Engineers";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h4 class="brown-text"><i class="material-icons left">engineering</i>Service Engineers</h4>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="row"><div class="col s12">
+        <div class="card-panel green lighten-4 green-text text-darken-2 auto-dismiss">
+            <i class="material-icons tiny">check_circle</i> @TempData["Success"]
+        </div>
+    </div></div>
+}
+
+<div class="row">
+    <!-- Form thêm mới / cập nhật -->
+    <div class="col s12 m4">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Thêm / Cập nhật Engineer</span>
+                <form asp-action="ServiceEngineers" method="post" id="engineerForm">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="red-text"></div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">person</i>
+                        <input asp-for="Registration.FirstName" id="FirstName" class="validate" />
+                        <label asp-for="Registration.FirstName" for="FirstName">First Name</label>
+                        <span asp-validation-for="Registration.FirstName" class="red-text helper-text"></span>
+                    </div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input asp-for="Registration.Email" type="email" id="Email" class="validate" />
+                        <label asp-for="Registration.Email" for="Email">Email</label>
+                        <span asp-validation-for="Registration.Email" class="red-text helper-text"></span>
+                    </div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">lock</i>
+                        <input asp-for="Registration.Password" type="password" id="Password" class="validate" />
+                        <label asp-for="Registration.Password" for="Password">Password (để trống nếu cập nhật)</label>
+                    </div>
+
+                    <div style="margin:10px 0">
+                        <label>
+                            <input asp-for="Registration.IsActive" type="checkbox" id="IsActive" checked />
+                            <span>Active</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top:15px">
+                        <button type="submit" class="btn brown darken-2 waves-effect" style="width:100%">
+                            <i class="material-icons left">save</i>Lưu
+                        </button>
+                        <button type="button" class="btn-flat waves-effect" style="width:100%;margin-top:5px"
+                            onclick="resetForm()">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách engineers với DataTables -->
+    <div class="col s12 m8">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Danh sách Service Engineers</span>
+                <table id="engineerTable" class="stripe hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Tên</th>
+                            <th>Email</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var eng in Model.ServiceEngineers)
+                        {
+                            <tr>
+                                <td>@eng.FirstName @eng.LastName</td>
+                                <td>@eng.Email</td>
+                                <td>
+                                    <span class="badge @(eng.IsActive ? "green" : "red") white-text new">
+                                        @(eng.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>@eng.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <button class="btn-small brown waves-effect"
+                                        onclick="editEngineer('@eng.FirstName', '@eng.Email', @eng.IsActive.ToString().ToLower())">
+                                        <i class="material-icons">edit</i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (!Model.ServiceEngineers.Any())
+                {
+                    <p class="center-align grey-text" style="padding:20px">Chưa có engineer nào.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($('#engineerTable tbody tr').length > 0) {
+                $('#engineerTable').DataTable({
+                    language: {
+                        search: "Tìm kiếm:",
+                        lengthMenu: "Hiển thị _MENU_ dòng",
+                        info: "Hiển thị _START_ đến _END_ / _TOTAL_ dòng",
+                        paginate: { first: "Đầu", last: "Cuối", next: "Sau", previous: "Trước" }
+                    }
+                });
+            }
+        });
+
+        function editEngineer(name, email, isActive) {
+            document.getElementById('FirstName').value = name;
+            document.getElementById('Email').value = email;
+            document.getElementById('Password').value = '';
+            document.getElementById('IsActive').checked = isActive;
+            M.updateTextFields();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            document.getElementById('engineerForm').reset();
+            M.updateTextFields();
+        }
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

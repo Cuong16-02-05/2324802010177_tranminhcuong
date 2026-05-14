@@ -1,0 +1,166 @@
+@model ASC.Model.ServiceRequest
+@using ASC.Model
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Đặt lịch dịch vụ";
+    var serviceValues = ViewBag.ServiceValues as List<MasterDataValue> ?? new List<MasterDataValue>();
+}
+
+<div class="row">
+  <div class="col s12">
+    <h4 class="brown-text">
+      <i class="material-icons left">build</i>Đặt lịch dịch vụ
+    </h4>
+    <p class="grey-text" style="margin-top:-8px">
+      Điền thông tin bên dưới. Admin sẽ xem xét và gửi báo giá cho bạn sớm nhất có thể.
+    </p>
+  </div>
+</div>
+
+@* Hướng dẫn quy trình *@
+<div class="row">
+  <div class="col s12">
+    <div class="card-panel blue lighten-5" style="padding:12px 16px;border-radius:6px">
+      <p style="margin:0;font-size:13px;color:#1565c0">
+        <i class="material-icons tiny" style="vertical-align:middle">info</i>
+        <strong>Quy trình:</strong>
+        Bạn đặt lịch →
+        Admin gửi báo giá →
+        Bạn đồng ý hoặc thương lượng (tối đa 2 lần) →
+        Kỹ thuật viên thực hiện →
+        Thanh toán &amp; hoàn tất.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col s12 m8 offset-m2">
+    <div class="card">
+      <div class="card-content">
+        <form asp-action="ServiceRequest" method="post">
+          @Html.AntiForgeryToken()
+          <div asp-validation-summary="ModelOnly" class="red-text"></div>
+
+          @* Xe *@
+          <div class="input-field">
+            <i class="material-icons prefix">directions_car</i>
+            <input asp-for="VehicleName" id="VehicleName" type="text" class="validate" required />
+            <label asp-for="VehicleName">Tên xe / Model (vd: Toyota Camry 2020)</label>
+            <span asp-validation-for="VehicleName" class="red-text helper-text"></span>
+          </div>
+
+          @* Biển số *@
+          <div class="input-field">
+            <i class="material-icons prefix">confirmation_number</i>
+            <input asp-for="VehicleRegistrationNumber" id="VehicleRegistrationNumber"
+                   type="text" class="validate" required />
+            <label asp-for="VehicleRegistrationNumber">Biển số xe (vd: 51G-123.45)</label>
+            <span asp-validation-for="VehicleRegistrationNumber" class="red-text helper-text"></span>
+          </div>
+
+          @* Chọn dịch vụ *@
+          <div style="margin-top:20px;margin-bottom:4px">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <i class="material-icons" style="color:#9e9e9e;margin-top:4px">build</i>
+              <div style="flex:1">
+                <p style="font-size:12px;color:#9e9e9e;margin:0 0 4px 0">
+                  Dịch vụ cần thực hiện <span class="red-text">*</span>
+                </p>
+
+                @if (serviceValues.Any())
+                {
+                  <select id="serviceSelect" asp-for="RequestedServices"
+                          class="browser-default" required
+                          style="width:100%;padding:8px 4px;border:none;
+                                 border-bottom:1px solid #9e9e9e;background:transparent;
+                                 font-size:15px;outline:none;cursor:pointer">
+                    <option value="">-- Chọn dịch vụ --</option>
+                    @foreach (var sv in serviceValues)
+                    {
+                      <option value="@sv.Name"
+                              data-price="@(sv.Price.HasValue ? sv.Price.Value.ToString("0") : "")">
+                        @sv.Name@(sv.Price.HasValue ? $" — {sv.Price.Value:N0} ₫" : " — Thỏa thuận")
+                      </option>
+                    }
+                  </select>
+                }
+                else
+                {
+                  <div class="card-panel orange lighten-4 orange-text text-darken-3"
+                       style="font-size:13px;padding:8px;margin:0">
+                    <i class="material-icons tiny">warning</i>
+                    Chưa có dịch vụ nào trong hệ thống. Admin cần thêm dữ liệu trước.
+                  </div>
+                  <input asp-for="RequestedServices" type="text" class="validate"
+                         placeholder="Nhập tên dịch vụ thủ công..." required
+                         style="width:100%;border:none;border-bottom:1px solid #9e9e9e;
+                                font-size:15px;padding:8px 0;margin-top:8px" />
+                }
+                <span asp-validation-for="RequestedServices" class="red-text helper-text"></span>
+              </div>
+            </div>
+
+            @* Hiển thị giá tham khảo ngay khi chọn *@
+            <div id="pricePreviewBox"
+                 style="display:none;margin:10px 0 4px 36px;padding:10px 14px;
+                        border-radius:6px;background:#efebe9;border-left:4px solid #795548;">
+              <span style="font-size:13px;color:#5d4037">
+                <i class="material-icons tiny" style="vertical-align:middle">local_offer</i>
+                Giá tham khảo: <strong id="pricePreviewValue" class="brown-text"></strong>
+              </span>
+              <span style="display:block;font-size:11px;color:#8d6e63;margin-top:3px">
+                ✱ Đây là giá tham khảo. Admin sẽ xác nhận giá chính thức qua email sau khi tiếp nhận đơn.
+              </span>
+            </div>
+          </div>
+
+          @* Ghi chú *@
+          <div class="input-field" style="margin-top:20px">
+            <i class="material-icons prefix">comment</i>
+            <textarea asp-for="Comments" id="Comments" class="materialize-textarea"></textarea>
+            <label asp-for="Comments">Ghi chú thêm (tùy chọn)</label>
+            <span class="helper-text">Mô tả triệu chứng, vấn đề xe đang gặp phải...</span>
+          </div>
+
+          <div class="row" style="margin-top:20px">
+            <div class="col s12">
+              <button type="submit" class="btn brown darken-2 waves-effect waves-light">
+                <i class="material-icons left">send</i>Gửi yêu cầu
+              </button>
+              <a href="/ServiceRequests/Dashboard/Dashboard"
+                 class="btn-flat waves-effect" style="margin-left:8px">Hủy</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+    var sel = document.getElementById('serviceSelect');
+    var box = document.getElementById('pricePreviewBox');
+    var val = document.getElementById('pricePreviewValue');
+    if (!sel || !box) return;
+
+    function updatePrice() {
+        var opt   = sel.options[sel.selectedIndex];
+        var price = opt ? opt.getAttribute('data-price') : '';
+        if (!opt || !opt.value) { box.style.display = 'none'; return; }
+        if (price && price !== '') {
+            val.textContent = parseInt(price, 10).toLocaleString('vi-VN') + ' ₫';
+        } else {
+            val.textContent = 'Thỏa thuận';
+        }
+        box.style.display = 'block';
+    }
+
+    sel.addEventListener('change', updatePrice);
+    updatePrice();
+})();
+</script>
+}

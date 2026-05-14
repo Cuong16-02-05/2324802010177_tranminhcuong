@@ -1,0 +1,267 @@
+@model IEnumerable<ASC.Model.ServiceRequest>
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+}
+
+<div class="section">
+
+  <div class="row" style="margin-bottom:0">
+    <div class="col s12">
+      <h4 class="brown-text">
+        <i class="material-icons left">dashboard</i>Dashboard
+      </h4>
+      <p class="grey-text" style="margin-top:-8px">
+        Xin chào, <strong>@User.Identity?.Name</strong> —
+        @if (User.IsInRole("Admin"))
+        { <span>bạn đang xem toàn bộ yêu cầu dịch vụ.</span> }
+        else if (User.IsInRole("Engineer"))
+        { <span>các đơn được phân công cho bạn.</span> }
+        else
+        { <span>các yêu cầu dịch vụ của bạn.</span> }
+      </p>
+    </div>
+  </div>
+
+  @* ── Stats ── *@
+  <div class="row">
+    <div class="col s6 m2">
+      <div class="card brown darken-1">
+        <div class="card-content white-text center-align" style="padding:16px">
+          <p style="font-size:28px;font-weight:500;margin:0">@ViewBag.TotalRequests</p>
+          <p style="font-size:12px;margin:0">Tổng đơn</p>
+        </div>
+      </div>
+    </div>
+    <div class="col s6 m2">
+      <div class="card orange darken-1">
+        <div class="card-content white-text center-align" style="padding:16px">
+          <p style="font-size:28px;font-weight:500;margin:0">@ViewBag.PendingRequests</p>
+          <p style="font-size:12px;margin:0">Chờ xử lý</p>
+        </div>
+      </div>
+    </div>
+    <div class="col s6 m2">
+      <div class="card purple darken-1">
+        <div class="card-content white-text center-align" style="padding:16px">
+          <p style="font-size:28px;font-weight:500;margin:0">@ViewBag.QuoteSentRequests</p>
+          <p style="font-size:12px;margin:0">Đã báo giá</p>
+        </div>
+      </div>
+    </div>
+    <div class="col s6 m2">
+      <div class="card blue darken-1">
+        <div class="card-content white-text center-align" style="padding:16px">
+          <p style="font-size:28px;font-weight:500;margin:0">@ViewBag.InProgressRequests</p>
+          <p style="font-size:12px;margin:0">Đang làm</p>
+        </div>
+      </div>
+    </div>
+    <div class="col s6 m2">
+      <div class="card green darken-1">
+        <div class="card-content white-text center-align" style="padding:16px">
+          <p style="font-size:28px;font-weight:500;margin:0">@ViewBag.CompletedRequests</p>
+          <p style="font-size:12px;margin:0">Hoàn tất</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @* ── Quick actions ── *@
+  <div class="row" style="margin-bottom:8px">
+    <div class="col s12" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      @if (User.IsInRole("User"))
+      {
+        <a href="/ServiceRequests/ServiceRequest/ServiceRequest"
+           class="btn brown darken-2 waves-effect"
+           title="Tạo yêu cầu dịch vụ mới">
+          <i class="material-icons left">add</i>Đặt lịch mới
+        </a>
+      }
+      @if (User.IsInRole("Admin"))
+      {
+        <a href="/Configuration/MasterData/MasterKeys"
+           class="btn blue darken-1 waves-effect"
+           title="Quản lý dịch vụ và giá">
+          <i class="material-icons left">settings</i>Quản lý dịch vụ
+        </a>
+        <a href="/Accounts/Account/ServiceEngineers"
+           class="btn teal darken-1 waves-effect"
+           title="Quản lý kỹ thuật viên">
+          <i class="material-icons left">people</i>Kỹ thuật viên
+        </a>
+      }
+    </div>
+  </div>
+
+  @* ── Hướng dẫn nhanh theo role ── *@
+  @if (User.IsInRole("Admin"))
+  {
+    <div class="row">
+      <div class="col s12">
+        <div class="card-panel brown lighten-5" style="padding:10px 16px;font-size:13px;border-radius:6px">
+          <strong>Hướng dẫn Admin:</strong>
+          Đơn <span class="badge orange white-text new" style="margin-left:4px">Pending</span> → Mở chi tiết → Nhập giá → Gửi báo giá.
+          Sau khi khách đồng ý (<span class="badge green white-text new" style="margin-left:4px">Approved</span>) → Phân công KTV.
+          KTV làm xong → Xác nhận thanh toán → Đóng đơn.
+        </div>
+      </div>
+    </div>
+  }
+  @if (User.IsInRole("User"))
+  {
+    <div class="row">
+      <div class="col s12">
+        <div class="card-panel blue lighten-5" style="padding:10px 16px;font-size:13px;border-radius:6px;color:#1565c0">
+          <strong>Hướng dẫn:</strong>
+          Sau khi tạo đơn, chờ Admin gửi báo giá qua email.
+          Đơn <span class="badge purple white-text new" style="margin-left:4px">QuoteSent</span> → Mở chi tiết để đồng ý hoặc thương lượng giá.
+        </div>
+      </div>
+    </div>
+  }
+  @if (User.IsInRole("Engineer"))
+  {
+    <div class="row">
+      <div class="col s12">
+        <div class="card-panel teal lighten-5" style="padding:10px 16px;font-size:13px;border-radius:6px;color:#00695c">
+          <strong>Hướng dẫn KTV:</strong>
+          Đơn <span class="badge blue white-text new" style="margin-left:4px">InProgress</span> được phân công cho bạn.
+          Mở chi tiết để xem thông tin và trao đổi qua chat.
+        </div>
+      </div>
+    </div>
+  }
+
+  @* ── Bảng đơn ── *@
+  <div class="row">
+    <div class="col s12">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title brown-text">
+            Danh sách yêu cầu dịch vụ
+          </span>
+          @if (Model != null && Model.Any())
+          {
+            <table class="striped responsive-table highlight" id="dashboardTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Khách hàng</th>
+                  <th>Xe</th>
+                  <th>Dịch vụ</th>
+                  <th>KTV</th>
+                  <th>Trạng thái</th>
+                  <th>Báo giá</th>
+                  <th>Giá báo</th>
+                  <th>Ngày</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var req in Model)
+                {
+                  <tr>
+                    <td><code style="font-size:12px">@req.UniqueId?.Substring(0,8)</code></td>
+                    <td style="font-size:13px">@req.CustomerEmail</td>
+                    <td style="font-size:13px">
+                      @req.VehicleName<br/>
+                      <small class="grey-text">@req.VehicleRegistrationNumber</small>
+                    </td>
+                    <td style="font-size:13px">@req.RequestedServices</td>
+                    <td style="font-size:13px">@(req.ServiceEngineer ?? "—")</td>
+                    <td>
+                      @{
+                        var sc = req.Status switch {
+                          "Completed"  => "green",
+                          "InProgress" => "blue",
+                          "QuoteSent"  => "purple",
+                          "Cancelled"  => "red",
+                          _            => "orange"
+                        };
+                        var sl = req.Status switch {
+                          "Pending"    => "Chờ báo giá",
+                          "QuoteSent"  => "Đã báo giá",
+                          "InProgress" => "Đang làm",
+                          "Completed"  => "Hoàn tất",
+                          "Cancelled"  => "Đã hủy",
+                          _            => req.Status
+                        };
+                      }
+                      <span class="badge @sc white-text new">@sl</span>
+                    </td>
+                    <td>
+                      @if (!string.IsNullOrEmpty(req.QuoteStatus))
+                      {
+                        var qc = req.QuoteStatus switch {
+                          "Approved"    => "green",
+                          "Negotiating" => "orange",
+                          "Rejected"    => "red",
+                          _             => "grey"
+                        };
+                        var ql = req.QuoteStatus switch {
+                          "Pending"     => "Chờ gửi",
+                          "Sent"        => "Đã gửi",
+                          "Approved"    => "Đồng ý",
+                          "Negotiating" => "Đang deal",
+                          "Rejected"    => "Từ chối",
+                          _             => req.QuoteStatus
+                        };
+                        <span class="badge @qc white-text new" style="font-size:10px">@ql</span>
+                      }
+                    </td>
+                    <td style="font-size:13px;white-space:nowrap">
+                      @(req.EstimatedPrice.HasValue ? req.EstimatedPrice.Value.ToString("N0") + " ₫" : "—")
+                    </td>
+                    <td style="font-size:12px;white-space:nowrap">@req.RequestedDate?.ToString("dd/MM/yyyy")</td>
+                    <td>
+                      <a href="/ServiceRequests/ServiceRequest/Details/@req.UniqueId"
+                         class="btn-small brown waves-effect" title="Xem chi tiết">
+                        <i class="material-icons">visibility</i>
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          else
+          {
+            <div class="center-align" style="padding:48px 0">
+              <i class="material-icons grey-text" style="font-size:48px">inbox</i>
+              <p class="grey-text">Chưa có yêu cầu dịch vụ nào.</p>
+              @if (User.IsInRole("User"))
+              {
+                <a href="/ServiceRequests/ServiceRequest/ServiceRequest"
+                   class="btn brown darken-2 waves-effect">
+                  <i class="material-icons left">add</i>Đặt lịch đầu tiên
+                </a>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@section Scripts {
+<script>
+$(document).ready(function () {
+    if ($('#dashboardTable tbody tr').length >= 1) {
+        $('#dashboardTable').DataTable({
+            responsive: true,
+            language: {
+                search: "Tìm kiếm:",
+                lengthMenu: "Hiển thị _MENU_ đơn",
+                info: "Hiển thị _START_–_END_ / _TOTAL_ đơn",
+                paginate: { previous: "Trước", next: "Sau" },
+                emptyTable: "Không có dữ liệu"
+            },
+            order: [[8, 'desc']]
+        });
+    }
+});
+</script>
+}

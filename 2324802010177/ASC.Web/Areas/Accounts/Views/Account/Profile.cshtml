@@ -1,0 +1,73 @@
+@model ASC.Web.Areas.Accounts.Models.ProfileViewModel
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h4 class="brown-text"><i class="material-icons left">account_circle</i>My Profile</h4>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="row"><div class="col s12">
+        <div class="card-panel green lighten-4 green-text text-darken-2 auto-dismiss">
+            <i class="material-icons tiny">check_circle</i> @TempData["Success"]
+        </div>
+    </div></div>
+}
+
+<div class="row">
+    <div class="col s12 m6 offset-m3">
+        <div class="card">
+            <div class="card-content">
+                <!-- Avatar -->
+                <div class="center-align" style="margin-bottom:20px">
+                    <i class="material-icons brown-text" style="font-size:80px">account_circle</i>
+                    <h6 class="grey-text">@Model?.Email</h6>
+                </div>
+
+                <form asp-action="Profile" method="post">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="UserId" type="hidden" />
+                    <input asp-for="Email" type="hidden" />
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">person</i>
+                        <input asp-for="FirstName" id="FirstName" class="validate" />
+                        <label asp-for="FirstName" for="FirstName" class="active">First Name</label>
+                        <span asp-validation-for="FirstName" class="red-text helper-text"></span>
+                    </div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">person_outline</i>
+                        <input asp-for="LastName" id="LastName" class="validate" />
+                        <label asp-for="LastName" for="LastName" class="active">Last Name</label>
+                    </div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input value="@Model?.Email" type="email" disabled class="grey-text" />
+                        <label class="active">Email (không thể thay đổi)</label>
+                    </div>
+
+                    <div style="margin-top:20px">
+                        <button type="submit" class="btn brown darken-2 waves-effect">
+                            <i class="material-icons left">save</i>Lưu thay đổi
+                        </button>
+                        <a asp-area="Identity" asp-page="/Account/Manage/ChangePassword"
+                           class="btn-flat brown-text" style="margin-left:10px">
+                            <i class="material-icons left">lock</i>Đổi mật khẩu
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

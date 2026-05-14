@@ -1,0 +1,760 @@
+@model ASC.Model.ServiceRequest
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Chi tiết yêu cầu dịch vụ";
+    bool isAdmin    = User.IsInRole("Admin");
+    bool isEngineer = User.IsInRole("Engineer");
+    bool isUser     = User.IsInRole("User");
+
+    string StatusColor(string? s) => s switch {
+        "Completed"  => "green",
+        "InProgress" => "blue",
+        "QuoteSent"  => "purple",
+        "Cancelled"  => "red",
+        _            => "orange"
+    };
+    string StatusLabel(string? s) => s switch {
+        "Pending"    => "Chờ báo giá",
+        "QuoteSent"  => "Đã gửi báo giá",
+        "InProgress" => "Đang thực hiện",
+        "Completed"  => "Hoàn tất",
+        "Cancelled"  => "Đã hủy",
+        _            => s ?? ""
+    };
+    string StatusDesc(string? s) => s switch {
+        "Pending"    => "Yêu cầu mới, Admin chưa gửi báo giá",
+        "QuoteSent"  => "Admin đã gửi báo giá, chờ khách xác nhận",
+        "InProgress" => "Khách đồng ý giá, kỹ thuật viên đang làm",
+        "Completed"  => "Dịch vụ hoàn tất, đã thanh toán",
+        "Cancelled"  => "Yêu cầu đã bị hủy",
+        _            => ""
+    };
+    string QuoteColor(string? q) => q switch {
+        "Approved"    => "green",
+        "Negotiating" => "orange darken-2",
+        "Rejected"    => "red",
+        _             => "blue lighten-1"
+    };
+    string QuoteLabel(string? q) => q switch {
+        "Pending"     => "Chờ gửi giá",
+        "Sent"        => "Đã gửi báo giá",
+        "Approved"    => "Khách đồng ý",
+        "Negotiating" => "Đang thương lượng",
+        "Rejected"    => "Từ chối",
+        _             => q ?? ""
+    };
+    string PayColor(string? p) => p == "Paid" ? "green" : "red";
+    string PayLabel(string? p) => p == "Paid" ? "Đã thanh toán" : "Chưa thanh toán";
+}
+
+<div class="row" style="margin-bottom:0">
+  <div class="col s12" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <a href="/ServiceRequests/Dashboard/Dashboard" class="btn-flat brown-text">
+      <i class="material-icons left">arrow_back</i>Dashboard
+    </a>
+    <h5 class="brown-text" style="margin:0">
+      Đơn #@Model.UniqueId?.Substring(0,8)
+    </h5>
+    <span class="badge @StatusColor(Model.Status) white-text new tooltipped"
+          data-position="bottom" data-tooltip="@StatusDesc(Model.Status)">
+      @StatusLabel(Model.Status)
+    </span>
+    @if (!string.IsNullOrEmpty(Model.QuoteStatus))
+    {
+      <span class="badge @QuoteColor(Model.QuoteStatus) white-text new">
+        Báo giá: @QuoteLabel(Model.QuoteStatus)
+      </span>
+    }
+    @if (!string.IsNullOrEmpty(Model.PaymentStatus))
+    {
+      <span class="badge @PayColor(Model.PaymentStatus) white-text new">
+        @PayLabel(Model.PaymentStatus)
+      </span>
+    }
+  </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="row"><div class="col s12">
+    <div class="card-panel green lighten-4 green-text text-darken-2" style="padding:10px 16px">
+      <i class="material-icons tiny">check_circle</i> @TempData["Success"]
+    </div>
+  </div></div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="row"><div class="col s12">
+    <div class="card-panel red lighten-4 red-text" style="padding:10px 16px">
+      <i class="material-icons tiny">error</i> @TempData["Error"]
+    </div>
+  </div></div>
+}
+
+<div class="row">
+
+  @* ══ CỘT TRÁI: thông tin + chat ══ *@
+  <div class="col s12 m8">
+
+    @* Thông tin đơn *@
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title">Thông tin yêu cầu</span>
+        <table class="striped" style="font-size:14px">
+          <tr><td style="width:40%"><strong>Khách hàng</strong></td><td>@Model.CustomerEmail</td></tr>
+          <tr><td><strong>Xe</strong></td><td>@Model.VehicleName</td></tr>
+          <tr><td><strong>Biển số</strong></td><td>@Model.VehicleRegistrationNumber</td></tr>
+          <tr><td><strong>Dịch vụ</strong></td><td>@Model.RequestedServices</td></tr>
+          <tr><td><strong>Kỹ thuật viên</strong></td><td>@(Model.ServiceEngineer ?? "Chưa phân công")</td></tr>
+          <tr><td><strong>Ngày tạo</strong></td><td>@Model.RequestedDate?.ToString("dd/MM/yyyy HH:mm")</td></tr>
+          @if (Model.CompletedDate.HasValue)
+          {
+            <tr><td><strong>Ngày hoàn thành</strong></td><td>@Model.CompletedDate.Value.ToString("dd/MM/yyyy HH:mm")</td></tr>
+          }
+          @if (!string.IsNullOrEmpty(Model.Comments))
+          {
+            <tr><td><strong>Ghi chú KH</strong></td><td>@Model.Comments</td></tr>
+          }
+        </table>
+
+        @* ── Bảng giá ── *@
+        @if (Model.EstimatedPrice.HasValue || Model.FinalPrice.HasValue)
+        {
+          <div class="divider" style="margin:12px 0"></div>
+          <p style="font-size:11px;color:#9e9e9e;margin-bottom:8px;letter-spacing:.05em">THÔNG TIN GIÁ</p>
+          <table class="striped" style="font-size:14px">
+            @if (Model.EstimatedPrice.HasValue)
+            {
+              <tr>
+                <td style="width:40%"><strong>Giá báo</strong></td>
+                <td class="brown-text"><strong>@Model.EstimatedPrice.Value.ToString("N0") ₫</strong></td>
+              </tr>
+            }
+            @if (!string.IsNullOrEmpty(Model.EngineerNotes))
+            {
+              <tr><td><strong>Ghi chú KTV</strong></td><td>@Model.EngineerNotes</td></tr>
+            }
+            @if (Model.NegotiationCount > 0)
+            {
+              <tr>
+                <td><strong>Thương lượng</strong></td>
+                <td>
+                  @Model.NegotiationCount/2 lần
+                  @if (Model.NegotiationCount >= 2)
+                  { <span class="red-text" style="font-size:12px"> — Đã hết lượt</span> }
+                </td>
+              </tr>
+            }
+            @if (Model.FinalPrice.HasValue)
+            {
+              <tr>
+                <td><strong>Giá cuối (thực tế)</strong></td>
+                <td class="green-text"><strong>@Model.FinalPrice.Value.ToString("N0") ₫</strong></td>
+              </tr>
+            }
+          </table>
+        }
+      </div>
+    </div>
+
+    @* ── Khách: panel phản hồi báo giá ── *@
+    @if (isUser && Model.Status == "QuoteSent" && Model.QuoteStatus == "Pending")
+    {
+      <div class="card-panel blue lighten-5" style="border-left:4px solid #1565c0;padding:16px">
+        <p style="margin:0 0 4px 0;font-size:13px;color:#9e9e9e">
+          <i class="material-icons tiny" style="vertical-align:middle">receipt</i>
+          GARAGE BÁO GIÁ
+        </p>
+        <p style="margin:0 0 12px 0;font-size:20px;font-weight:500;color:#4e342e">
+          @Model.EstimatedPrice?.ToString("N0") ₫
+        </p>
+        @if (!string.IsNullOrEmpty(Model.EngineerNotes))
+        {
+          <p style="font-size:13px;color:#555;margin-bottom:12px">Ghi chú: @Model.EngineerNotes</p>
+        }
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <form asp-action="ApproveQuote" asp-area="ServiceRequests" asp-controller="ServiceRequest" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.UniqueId" />
+            <button type="submit" class="btn green darken-2 waves-effect">
+              <i class="material-icons left">check</i>Đồng ý giá này
+            </button>
+          </form>
+          @if (Model.NegotiationCount < 2)
+          {
+            <form asp-action="NegotiateQuote" asp-area="ServiceRequests" asp-controller="ServiceRequest" method="post">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@Model.UniqueId" />
+              <button type="submit" class="btn orange darken-2 waves-effect"
+                onclick="return confirm('Gửi yêu cầu deal lại giá? Admin sẽ xem xét và liên hệ lại.')">
+                <i class="material-icons left">swap_horiz</i>
+                Deal lại giá <span style="font-size:11px">(còn @(2 - Model.NegotiationCount) lần)</span>
+              </button>
+            </form>
+          }
+          else
+          {
+            <span class="red-text" style="font-size:13px;align-self:center">
+              <i class="material-icons tiny">block</i> Hết lượt deal. Vui lòng liên hệ trực tiếp.
+            </span>
+          }
+        </div>
+      </div>
+    }
+
+    @if (isUser && Model.QuoteStatus == "Approved")
+    {
+      <div class="card-panel green lighten-4 green-text text-darken-2" style="padding:12px 16px">
+        <i class="material-icons tiny">check_circle</i>
+        Bạn đã đồng ý giá <strong>@Model.EstimatedPrice?.ToString("N0") ₫</strong>.
+        Kỹ thuật viên sẽ sớm được phân công.
+      </div>
+    }
+
+    @if (isUser && Model.QuoteStatus == "Negotiating")
+    {
+      <div class="card-panel orange lighten-4 orange-text text-darken-3" style="padding:12px 16px">
+        <i class="material-icons tiny">swap_horiz</i>
+        Yêu cầu thương lượng của bạn đã được gửi (lần @Model.NegotiationCount/2).
+        Admin đang xem xét và sẽ gửi lại báo giá cho bạn sớm.
+      </div>
+    }
+
+    @* ── CHAT BOX ── *@
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title brown-text" style="display:flex;align-items:center;gap:8px">
+          <i class="material-icons">chat</i>Chat
+          <span id="chatConnStatus" style="font-size:11px;color:#9e9e9e;font-weight:normal;margin-left:4px"></span>
+        </span>
+        <p style="font-size:12px;color:#9e9e9e;margin:-8px 0 10px 0">
+          Trao đổi trực tiếp giữa khách hàng, Admin và kỹ thuật viên.
+        </p>
+        <div id="chatBox"
+             style="height:320px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;
+                    padding:12px;background:#fafafa;margin-bottom:12px;">
+          <p class="grey-text center-align" id="chatPlaceholder" style="margin-top:100px">
+            <i class="material-icons" style="font-size:32px;display:block;margin-bottom:8px">chat_bubble_outline</i>
+            Đang kết nối...
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="chatInput" type="text" placeholder="Nhập tin nhắn rồi nhấn Enter..."
+                 style="flex:1;border:none;border-bottom:1px solid #bdbdbd;padding:8px 4px;
+                        font-size:14px;outline:none;background:transparent;"
+                 maxlength="500" autocomplete="off" />
+          <button class="btn brown darken-2 waves-effect" id="sendBtn" title="Gửi (Enter)">
+            <i class="material-icons">send</i>
+          </button>
+        </div>
+        <p style="font-size:10px;color:#bdbdbd;margin:4px 0 0 0">
+          Tối đa 500 ký tự. Tin nhắn được lưu vĩnh viễn.
+        </p>
+      </div>
+    </div>
+
+  </div>@* /col m8 *@
+
+  @* ══ CỘT PHẢI: action panels theo role ══ *@
+  @if (isAdmin || isEngineer)
+  {
+    <div class="col s12 m4">
+
+      @* ── Thông báo khách đang deal ── *@
+      @if (Model.QuoteStatus == "Negotiating")
+      {
+        <div class="card-panel orange lighten-4 orange-text text-darken-3" style="padding:12px 16px">
+          <strong><i class="material-icons tiny">swap_horiz</i>
+          Khách yêu cầu deal lại (lần @Model.NegotiationCount/2)</strong><br/>
+          <small>Cập nhật giá mới bên dưới rồi nhấn "Gửi lại báo giá".</small>
+        </div>
+      }
+
+      @if (Model.QuoteStatus == "Approved")
+      {
+        <div class="card-panel green lighten-4 green-text text-darken-2" style="padding:12px 16px;margin-bottom:8px">
+          <i class="material-icons tiny">check_circle</i>
+          Khách đã đồng ý giá <strong>@Model.EstimatedPrice?.ToString("N0") ₫</strong>.
+          Có thể phân công kỹ thuật viên.
+        </div>
+      }
+
+      @* ── Form báo giá & thanh toán (CHỈ ADMIN) ── *@
+      @if (isAdmin)
+      {
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title" style="font-size:16px">
+            <i class="material-icons tiny left" style="margin-top:2px">attach_money</i>
+            Báo giá & Thanh toán
+          </span>
+
+          @* Hướng dẫn ngắn theo trạng thái *@
+          <div style="font-size:12px;color:#555;margin-bottom:12px;padding:8px 12px;background:#f5f5f5;border-radius:4px;line-height:1.6">
+            @if (Model.Status == "Pending")
+            {
+              <div><strong>① Bạn đang ở bước: Chờ báo giá</strong></div>
+              <div style="color:#9e9e9e">Nhập giá ước tính → nhấn <em>Gửi báo giá</em>. Khách sẽ nhận email và vào hệ thống xác nhận.</div>
+            }
+            else if (Model.QuoteStatus == "Negotiating")
+            {
+              <div><strong>② Bạn đang ở bước: Khách đang thương lượng</strong></div>
+              <div style="color:#9e9e9e">Khách chưa đồng ý giá cũ. Điều chỉnh giá phù hợp → nhấn <em>Gửi lại báo giá</em>.</div>
+            }
+            else if (Model.QuoteStatus == "Approved" && Model.Status != "Completed")
+            {
+              <div><strong>③ Bạn đang ở bước: Khách đã đồng ý</strong></div>
+              <div style="color:#9e9e9e">Chọn kỹ thuật viên bên dưới → phân công. Sau khi làm xong → xác nhận thanh toán.</div>
+            }
+            else if (Model.Status == "Completed")
+            {
+              <div><strong>✓ Đơn đã hoàn tất</strong></div>
+            }
+            else
+            {
+              <div style="color:#9e9e9e">Cập nhật giá hoặc trạng thái đơn.</div>
+            }
+          </div>
+
+          <form asp-area="ServiceRequests" asp-controller="ServiceRequest"
+                asp-action="UpdateQuote" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.UniqueId" />
+            <input type="hidden" name="quoteAction" id="quoteAction" value="draft" />
+
+            @* Giá gợi ý từ MasterData — chỉ hiện khi chưa có giá và có dữ liệu *@
+            @if (ViewBag.SuggestedPrice != null && !Model.EstimatedPrice.HasValue)
+            {
+              <div style="margin-bottom:8px;padding:8px 12px;background:#efebe9;border-left:4px solid #795548;border-radius:0 4px 4px 0;font-size:12px;color:#5d4037;cursor:pointer"
+                   onclick="document.getElementById('estimatedPrice').value=@ViewBag.SuggestedPrice;document.getElementById('estimatedPrice').dispatchEvent(new Event('change'));">
+                <i class="material-icons tiny" style="vertical-align:middle">local_offer</i>
+                Giá tham khảo từ danh mục: <strong>@(((decimal)ViewBag.SuggestedPrice).ToString("N0")) ₫</strong>
+                <span style="color:#8d6e63;margin-left:4px">(bấm để điền vào ô)</span>
+              </div>
+            }
+            @if (ViewBag.SuggestedPrice != null && Model.EstimatedPrice.HasValue && (decimal)ViewBag.SuggestedPrice != Model.EstimatedPrice.Value)
+            {
+              <div style="margin-bottom:8px;padding:6px 12px;background:#f3f3f3;border-radius:4px;font-size:11px;color:#9e9e9e">
+                <i class="material-icons tiny" style="vertical-align:middle">info_outline</i>
+                Giá danh mục: @(((decimal)ViewBag.SuggestedPrice).ToString("N0")) ₫ — giá bạn đang gửi: @Model.EstimatedPrice.Value.ToString("N0") ₫
+              </div>
+            }
+
+            <div class="input-field">
+              <i class="material-icons prefix">attach_money</i>
+              @if (Model.Status == "Completed")
+              {
+                <input type="number" name="estimatedPrice" id="estimatedPrice"
+                       value="@Model.EstimatedPrice" step="1000" min="0" class="validate" readonly="readonly" />
+              }
+              else
+              {
+                <input type="number" name="estimatedPrice" id="estimatedPrice"
+                       value="@Model.EstimatedPrice" step="1000" min="0" class="validate" />
+              }
+              <label for="estimatedPrice" class="@(Model.EstimatedPrice.HasValue ? "active" : "")">
+                Giá ước tính (VND)
+              </label>
+              <span class="helper-text">Giá gửi cho khách xác nhận — có thể điều chỉnh trước khi gửi</span>
+            </div>
+
+            <div class="input-field">
+              <i class="material-icons prefix">notes</i>
+              <textarea name="engineerNotes" id="engineerNotes"
+                        class="materialize-textarea">@Model.EngineerNotes</textarea>
+              <label for="engineerNotes"
+                     class="@(!string.IsNullOrEmpty(Model.EngineerNotes) ? "active" : "")">
+                Ghi chú kỹ thuật
+              </label>
+              <span class="helper-text">Lý do, phụ tùng, ghi chú thêm</span>
+            </div>
+
+            @if (Model.Status != "Completed")
+            {
+              <button type="button" class="btn grey lighten-1 grey-text text-darken-3 waves-effect"
+                      style="width:100%;margin-bottom:8px" onclick="submitQuote('draft')">
+                <i class="material-icons left">save</i>Lưu nháp
+              </button>
+
+              @if (Model.QuoteStatus == "Negotiating")
+              {
+                <button type="button" class="btn orange darken-2 waves-effect"
+                        style="width:100%;margin-bottom:8px" onclick="submitQuote('resend')">
+                  <i class="material-icons left">send</i>Gửi lại báo giá
+                </button>
+              }
+              else if (Model.QuoteStatus != "Approved")
+              {
+                <button type="button" class="btn brown darken-2 waves-effect"
+                        style="width:100%;margin-bottom:8px" onclick="submitQuote('send')">
+                  <i class="material-icons left">send</i>Gửi báo giá cho khách
+                </button>
+              }
+            }
+
+            @if (Model.QuoteStatus == "Approved")
+            {
+              <div class="divider" style="margin:12px 0"></div>
+              <p style="font-size:11px;color:#9e9e9e;margin-bottom:8px;letter-spacing:.05em">THANH TOÁN</p>
+
+              <div class="input-field">
+                <i class="material-icons prefix">payment</i>
+                <input type="number" name="finalPrice" id="finalPrice"
+                       value="@(Model.FinalPrice ?? Model.EstimatedPrice)"
+                       step="1000" min="0" class="validate" />
+                <label for="finalPrice"
+                       class="@(Model.FinalPrice.HasValue || Model.EstimatedPrice.HasValue ? "active" : "")">
+                  Giá cuối thực tế (VND)
+                </label>
+                <span class="helper-text">Có thể khác giá báo nếu phát sinh thêm</span>
+              </div>
+
+              <div class="input-field">
+                <select name="paymentStatus" id="paymentStatusSelect">
+                  <option value="">-- Trạng thái thanh toán --</option>
+                  @if (Model.PaymentStatus == "Unpaid") {
+                    <option value="Unpaid" selected="selected">Chưa thanh toán</option>
+                  } else {
+                    <option value="Unpaid">Chưa thanh toán</option>
+                  }
+                  @if (Model.PaymentStatus == "Paid") {
+                    <option value="Paid" selected="selected">Đã thanh toán ✓</option>
+                  } else {
+                    <option value="Paid">Đã thanh toán ✓</option>
+                  }
+                </select>
+                <label>Trạng thái thanh toán</label>
+              </div>
+
+              <button type="button" class="btn green darken-2 waves-effect"
+                      style="width:100%" onclick="submitQuote('payment')">
+                <i class="material-icons left">check_circle</i>Xác nhận thanh toán
+              </button>
+            }
+            else
+            {
+              <input type="hidden" name="finalPrice"     value="@Model.FinalPrice" />
+              <input type="hidden" name="paymentStatus"  value="@Model.PaymentStatus" />
+            }
+          </form>
+        </div>
+      </div>
+      }
+
+      @* ── Kỹ thuật viên: chỉ xem thông tin đơn được phân công ── *@
+      @if (isEngineer)
+      {
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title" style="font-size:16px">
+            <i class="material-icons tiny left" style="margin-top:2px">engineering</i>
+            Thông tin công việc
+          </span>
+          <table class="striped" style="font-size:13px">
+            <tr>
+              <td style="width:50%"><strong>Trạng thái đơn</strong></td>
+              <td>@StatusLabel(Model.Status)</td>
+            </tr>
+            @if (Model.EstimatedPrice.HasValue)
+            {
+              <tr>
+                <td><strong>Giá báo</strong></td>
+                <td class="brown-text"><strong>@Model.EstimatedPrice.Value.ToString("N0") ₫</strong></td>
+              </tr>
+            }
+            @if (!string.IsNullOrEmpty(Model.EngineerNotes))
+            {
+              <tr>
+                <td><strong>Ghi chú kỹ thuật</strong></td>
+                <td>@Model.EngineerNotes</td>
+              </tr>
+            }
+            <tr>
+              <td><strong>Thanh toán</strong></td>
+              <td>@PayLabel(Model.PaymentStatus)</td>
+            </tr>
+          </table>
+          <p style="font-size:11px;color:#9e9e9e;margin-top:12px;margin-bottom:0">
+            <i class="material-icons tiny">info</i>
+            Thông tin báo giá và thanh toán do Admin quản lý.
+          </p>
+        </div>
+      </div>
+      }
+
+      @* ── Phân công kỹ thuật viên (Admin) ── *@
+      @if (isAdmin)
+      {
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title" style="font-size:16px">
+              <i class="material-icons tiny left" style="margin-top:2px">person_pin</i>
+              Phân công KTV
+            </span>
+            <p style="font-size:12px;color:#9e9e9e;margin-bottom:12px">
+              @if (Model.QuoteStatus != "Approved")
+              { <span class="orange-text"><i class="material-icons tiny">warning</i> Chỉ phân công sau khi khách đồng ý giá.</span> }
+              else
+              { <span>Khách đã đồng ý. Chọn kỹ thuật viên phù hợp.</span> }
+            </p>
+            <form asp-action="UpdateStatus" method="post">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id"     value="@Model.UniqueId" />
+              <input type="hidden" name="status" value="InProgress" />
+
+              <div class="input-field">
+                @if (Model.QuoteStatus != "Approved")
+                {
+                  <select name="engineerEmail" id="engineerSelect" disabled="disabled">
+                    <option value="">-- Chọn kỹ thuật viên --</option>
+                    @if (ViewBag.Engineers != null)
+                    {
+                      @foreach (var eng in (List<ASC.Model.ApplicationUser>)ViewBag.Engineers)
+                      {
+                        if (eng.Email == Model.ServiceEngineer) {
+                          <option value="@eng.Email" selected="selected">@eng.FirstName (@eng.Email)</option>
+                        } else {
+                          <option value="@eng.Email">@eng.FirstName (@eng.Email)</option>
+                        }
+                      }
+                    }
+                  </select>
+                }
+                else
+                {
+                  <select name="engineerEmail" id="engineerSelect">
+                    <option value="">-- Chọn kỹ thuật viên --</option>
+                    @if (ViewBag.Engineers != null)
+                    {
+                      @foreach (var eng in (List<ASC.Model.ApplicationUser>)ViewBag.Engineers)
+                      {
+                        if (eng.Email == Model.ServiceEngineer) {
+                          <option value="@eng.Email" selected="selected">@eng.FirstName (@eng.Email)</option>
+                        } else {
+                          <option value="@eng.Email">@eng.FirstName (@eng.Email)</option>
+                        }
+                      }
+                    }
+                  </select>
+                }
+                <label>Kỹ thuật viên</label>
+              </div>
+
+              <div class="input-field">
+                <select name="status" id="statusSelect">
+                  @foreach (var s in new[]{"Pending","QuoteSent","InProgress","Completed","Cancelled"})
+                  {
+                    if (Model.Status == s) {
+                      <option value="@s" selected="selected">@s</option>
+                    } else {
+                      <option value="@s">@s</option>
+                    }
+                  }
+                </select>
+                <label>Trạng thái đơn</label>
+              </div>
+
+              @if (Model.QuoteStatus != "Approved")
+              {
+                <button type="submit" class="btn teal darken-1 waves-effect" style="width:100%" disabled="disabled">
+                  <i class="material-icons left">assignment_ind</i>Cập nhật & Phân công
+                </button>
+              }
+              else
+              {
+                <button type="submit" class="btn teal darken-1 waves-effect" style="width:100%">
+                  <i class="material-icons left">assignment_ind</i>Cập nhật & Phân công
+                </button>
+              }
+            </form>
+          </div>
+        </div>
+      }
+
+    </div>@* /col m4 *@
+  }
+
+</div>@* /row *@
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+<script>
+// ── Quote form submit ──────────────────────────────────────────────────
+function submitQuote(action) {
+    var confirmMsg = null;
+    if (action === 'send')   confirmMsg = 'Gửi báo giá cho khách hàng? Họ sẽ nhận email thông báo.';
+    if (action === 'resend') confirmMsg = 'Gửi lại báo giá điều chỉnh? Khách sẽ nhận email.';
+    if (action === 'payment') {
+        var ps = document.getElementById('paymentStatusSelect');
+        if (ps && ps.value === 'Paid') confirmMsg = 'Xác nhận khách đã thanh toán? Hành động này không thể hoàn tác.';
+    }
+    if (confirmMsg && !confirm(confirmMsg)) return;
+    document.getElementById('quoteAction').value = action;
+    document.getElementById('quoteAction').closest('form').submit();
+}
+
+// ── Chat ───────────────────────────────────────────────────────────────
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        M.FormSelect.init(document.querySelectorAll('select'));
+        M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+        document.querySelectorAll('.materialize-textarea').forEach(function (el) {
+            M.textareaAutoResize(el);
+        });
+    });
+
+    var serviceRequestId = '@Model.UniqueId';
+    var statusEl  = document.getElementById('chatConnStatus');
+    var chatBox   = document.getElementById('chatBox');
+    var placeholder = document.getElementById('chatPlaceholder');
+
+    function setStatus(msg, color) {
+        if (statusEl) { statusEl.textContent = msg; statusEl.style.color = color || '#9e9e9e'; }
+    }
+
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl('/chatHub')
+        .withAutomaticReconnect([0, 2000, 5000, 10000])
+        .build();
+
+    // Nhận tin nhắn mới realtime
+    connection.on('ReceiveMessage', function (msg) {
+        appendMessage(msg, msg.isOwn);
+    });
+
+    // Nhận lỗi từ Hub (vd: phiên hết hạn)
+    connection.on('ChatError', function (err) {
+        showSystemMsg('⚠ ' + err, '#e53935');
+    });
+
+    connection.onreconnecting(function () { setStatus('Đang kết nối lại...', '#fb8c00'); });
+    connection.onreconnected(function ()  { setStatus('● Trực tuyến', '#43a047'); });
+    connection.onclose(function ()        { setStatus('Mất kết nối', '#e53935'); });
+
+    // Khởi động
+    connection.start()
+        .then(function () {
+            setStatus('● Trực tuyến', '#43a047');
+            return connection.invoke('JoinServiceRequest', serviceRequestId);
+        })
+        .then(function () { loadMessages(); })
+        .catch(function (err) {
+            setStatus('Lỗi kết nối', '#e53935');
+            if (placeholder) {
+                placeholder.innerHTML =
+                    '<i class="material-icons" style="font-size:32px;display:block;margin-bottom:8px;color:#e53935">wifi_off</i>' +
+                    'Không thể kết nối chat.<br><small style="color:#9e9e9e">Tải lại trang để thử lại.</small>';
+            }
+            console.error('SignalR connect error:', err);
+        });
+
+    // Load lịch sử tin nhắn qua REST
+    function loadMessages() {
+        if (placeholder) placeholder.innerHTML =
+            '<i class="material-icons grey-text" style="font-size:24px;display:block;margin-bottom:8px">hourglass_empty</i>Đang tải...';
+
+        fetch('/ServiceRequests/Chat/GetMessages?serviceRequestId=' + encodeURIComponent(serviceRequestId))
+            .then(function (r) {
+                if (!r.ok) return r.json().then(function(e){ throw new Error(e.error || 'HTTP ' + r.status); });
+                return r.json();
+            })
+            .then(function (msgs) {
+                chatBox.innerHTML = '';
+                if (!msgs || msgs.length === 0) {
+                    chatBox.innerHTML =
+                        '<p class="grey-text center-align" style="margin-top:100px">' +
+                        '<i class="material-icons" style="font-size:32px;display:block;margin-bottom:8px">chat_bubble_outline</i>' +
+                        'Chưa có tin nhắn nào.<br><small>Hãy bắt đầu cuộc trò chuyện!</small></p>';
+                    return;
+                }
+                msgs.forEach(function (m) { appendMessage(m, m.isOwn); });
+            })
+            .catch(function (err) {
+                chatBox.innerHTML =
+                    '<p class="red-text center-align" style="font-size:12px;padding:16px">' +
+                    '<i class="material-icons tiny">error</i> Lỗi tải tin nhắn: ' + err.message + '</p>';
+                console.error('loadMessages error:', err);
+            });
+    }
+
+    function appendMessage(msg, isOwn) {
+        // Xóa placeholder nếu còn
+        var ph = chatBox.querySelector('p.grey-text, p.red-text');
+        if (ph) ph.remove();
+
+        var wrap   = document.createElement('div');
+        wrap.style.cssText = 'margin:8px 0;display:flex;flex-direction:column;align-items:' +
+            (isOwn ? 'flex-end' : 'flex-start') + ';';
+
+        // Role badge nhỏ
+        if (msg.senderRole && msg.senderRole !== 'User')
+        {
+            var roleEl = document.createElement('span');
+            roleEl.style.cssText = 'font-size:9px;text-transform:uppercase;letter-spacing:.06em;' +
+                'color:' + (msg.senderRole === 'Admin' ? '#6a1b9a' : '#00695c') + ';' +
+                'margin-bottom:2px;' + (isOwn ? 'text-align:right' : '');
+            roleEl.textContent = msg.senderRole;
+            wrap.appendChild(roleEl);
+        }
+
+        var bubble = document.createElement('div');
+        bubble.style.cssText =
+            'max-width:75%;padding:9px 14px;border-radius:' +
+            (isOwn ? '14px 14px 2px 14px' : '14px 14px 14px 2px') +
+            ';font-size:14px;line-height:1.4;word-break:break-word;' +
+            'background:' + (isOwn ? '#4e342e' : '#e0e0e0') + ';' +
+            'color:' + (isOwn ? '#fff' : '#212121') + ';';
+        bubble.textContent = msg.message;
+
+        var meta = document.createElement('div');
+        meta.style.cssText = 'font-size:10px;color:#9e9e9e;margin-top:3px;';
+        meta.textContent   = (msg.fromDisplayName || msg.fromEmail) + ' · ' + msg.sentDate;
+
+        wrap.appendChild(bubble);
+        wrap.appendChild(meta);
+        chatBox.appendChild(wrap);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showSystemMsg(text, color) {
+        var el = document.createElement('div');
+        el.style.cssText = 'text-align:center;font-size:11px;color:' + (color||'#9e9e9e') + ';margin:6px 0;';
+        el.textContent   = text;
+        chatBox.appendChild(el);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        var input = document.getElementById('chatInput');
+        var btn   = document.getElementById('sendBtn');
+        var msg   = input.value.trim();
+        if (!msg) return;
+
+        if (connection.state !== signalR.HubConnectionState.Connected) {
+            showSystemMsg('Mất kết nối — đang kết nối lại...', '#fb8c00');
+            return;
+        }
+
+        btn.disabled    = true;
+        input.disabled  = true;
+
+        connection.invoke('SendMessage', serviceRequestId, msg)
+            .then(function ()  { input.value = ''; })
+            .catch(function (err) {
+                showSystemMsg('Lỗi gửi tin: ' + err, '#e53935');
+                console.error('invoke SendMessage error:', err);
+            })
+            .finally(function () {
+                btn.disabled   = false;
+                input.disabled = false;
+                input.focus();
+            });
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('chatInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+})();
+</script>
+}

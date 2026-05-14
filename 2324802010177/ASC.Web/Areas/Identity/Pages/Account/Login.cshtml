@@ -1,0 +1,84 @@
+@page
+@model ASC.Web.Areas.Identity.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Log in";
+    Layout = "~/Views/Shared/_MasterLayout.cshtml";
+}
+
+<div class="row" style="min-height:100vh;background:linear-gradient(135deg,#4e342e,#795548);display:flex;align-items:center;justify-content:center;margin:0">
+    <div class="col s12 m6 l4" style="margin:0 auto">
+        <div class="card" style="border-radius:12px;overflow:hidden">
+            <!-- Header -->
+            <div class="card-content brown darken-2 white-text center-align" style="padding:30px">
+                <i class="material-icons" style="font-size:60px">directions_car</i>
+                <h5 style="margin:10px 0 0">Automobile Service Center</h5>
+                <p style="opacity:.8;margin:5px 0 0">Sign in to your account</p>
+            </div>
+
+            <!-- Form -->
+            <div class="card-content" style="padding:30px">
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="card-panel red lighten-4 red-text text-darken-2">
+                        <i class="material-icons tiny">error</i> @Model.ErrorMessage
+                    </div>
+                }
+
+                <form method="post">
+                    <div asp-validation-summary="ModelOnly" class="red-text"></div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input asp-for="Input.Email" type="email" id="email" class="validate" autocomplete="username" />
+                        <label asp-for="Input.Email" for="email">Email Address</label>
+                        <span asp-validation-for="Input.Email" class="helper-text red-text"></span>
+                    </div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">lock</i>
+                        <input asp-for="Input.Password" type="password" id="password" class="validate" autocomplete="current-password" />
+                        <label asp-for="Input.Password" for="password">Password</label>
+                        <span asp-validation-for="Input.Password" class="helper-text red-text"></span>
+                    </div>
+
+                    <div style="margin:10px 0">
+                        <label>
+                            <input asp-for="Input.RememberMe" type="checkbox" />
+                            <span>Remember me</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn brown darken-2 waves-effect waves-light" style="width:100%;margin-top:10px">
+                        <i class="material-icons left">login</i>Sign In
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <div class="divider" style="margin:20px 0"></div>
+
+                <!-- Lab 5 Part I: Google OAuth Button -->
+                <form method="post" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="provider" value="Google" />
+                    <button type="submit" class="btn waves-effect waves-light white black-text" style="width:100%;box-shadow:0 1px 3px rgba(0,0,0,.3)">
+                        <img src="https://www.google.com/favicon.ico" style="width:18px;height:18px;margin-right:8px;vertical-align:middle" />
+                        Đăng nhập bằng Google
+                    </button>
+                </form>
+
+                <div class="divider" style="margin:20px 0"></div>
+
+                <div class="center-align">
+                    <a asp-page="./ForgotPassword" class="brown-text">Quên mật khẩu?</a>
+                </div>
+                <div class="center-align" style="margin-top:10px">
+                    <a asp-page="./Register" class="brown-text">Chưa có tài khoản? Đăng ký</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

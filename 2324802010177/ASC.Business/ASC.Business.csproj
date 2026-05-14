@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ASC.DataAccess\ASC.DataAccess.csproj" />
+    <ProjectReference Include="..\ASC.Model\ASC.Model.csproj" />
+  </ItemGroup>
+</Project>

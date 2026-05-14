@@ -1,0 +1,251 @@
+@model ASC.Web.Areas.Configuration.Models.MasterValuesViewModel
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Master Values";
+}
+
+<div class="row">
+    <div class="col s12">
+        <a href="/Configuration/MasterData/MasterKeys" class="btn-flat brown-text">
+            <i class="material-icons left">arrow_back</i>Về Master Keys
+        </a>
+        <h4 class="brown-text">
+            <i class="material-icons left">settings</i>
+            Values: <em>@Model.MasterDataKeyName</em>
+        </h4>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="row"><div class="col s12">
+        <div class="card-panel green lighten-4 green-text text-darken-2 auto-dismiss">
+            <i class="material-icons tiny">check_circle</i> @TempData["Success"]
+        </div>
+    </div></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="row"><div class="col s12">
+        <div class="card-panel red lighten-4 red-text">
+            <i class="material-icons tiny">error</i> @TempData["Error"]
+        </div>
+    </div></div>
+}
+
+<div class="row">
+    <!-- Cột trái: Form thêm/sửa + Upload Excel -->
+    <div class="col s12 m4">
+
+        <!-- Form thêm/sửa Value -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Thêm / Cập nhật Value</span>
+                <form asp-action="MasterValues" method="post" id="valueForm">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="MasterDataKeyId"   type="hidden" />
+                    <input asp-for="MasterDataKeyName" type="hidden" />
+                    <input asp-for="MasterDataValue.UniqueId"       type="hidden" id="ValUniqueId" />
+                    <input asp-for="MasterDataValue.MasterDataKeyId" type="hidden"
+                           value="@Model.MasterDataKeyId" />
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">label_outline</i>
+                        <input asp-for="MasterDataValue.Name" id="ValName"
+                               class="validate" required />
+                        <label asp-for="MasterDataValue.Name" for="ValName">
+                            Value Name (VD: Engine Repair)
+                        </label>
+                        <span asp-validation-for="MasterDataValue.Name"
+                              class="red-text helper-text"></span>
+                    </div>
+
+                    <div style="margin:10px 0">
+                        <label>
+                            <input asp-for="MasterDataValue.IsActive" type="checkbox"
+                                   id="ValIsActive" checked />
+                            <span>Active</span>
+                        </label>
+                    </div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">attach_money</i>
+                        <input asp-for="MasterDataValue.Price" id="ValPrice"
+                               type="number" step="1000" min="0" class="validate" />
+                        <label asp-for="MasterDataValue.Price" for="ValPrice">
+                            Giá tham khảo (VND) — để trống = Thỏa thuận
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn brown darken-2 waves-effect" style="width:100%">
+                        <i class="material-icons left">save</i>Lưu
+                    </button>
+                    <button type="button" class="btn-flat waves-effect"
+                        style="width:100%;margin-top:5px" onclick="resetValueForm()">Reset</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lab 6 V4: Upload Excel -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">
+                    <i class="material-icons left" style="color:#1E7E34">table_chart</i>
+                    Upload Excel
+                </span>
+                <p class="grey-text" style="font-size:12px">
+                    Upload file .xlsx để thêm nhiều values cùng lúc.<br/>
+                    Cột A: Value Name | Cột B: IsActive (TRUE/FALSE)
+                </p>
+
+                <!-- Download Template -->
+                <a href="/Configuration/MasterData/DownloadTemplate?keyName=@Model.MasterDataKeyName"
+                   class="btn-small teal waves-effect" style="margin-bottom:10px;width:100%">
+                    <i class="material-icons left">file_download</i>Tải Template Excel
+                </a>
+
+                <!-- Upload form -->
+                <form asp-action="UploadExcel" method="post"
+                      enctype="multipart/form-data" id="uploadForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="keyId"   value="@Model.MasterDataKeyId" />
+                    <input type="hidden" name="keyName" value="@Model.MasterDataKeyName" />
+
+                    <div class="file-field input-field">
+                        <div class="btn brown darken-2 btn-small waves-effect">
+                            <span>Chọn file</span>
+                            <input type="file" name="excelFile" accept=".xlsx"
+                                   onchange="updateFileName(this)" />
+                        </div>
+                        <div class="file-path-wrapper">
+                            <input class="file-path validate" type="text"
+                                   id="fileNameDisplay" placeholder="Chọn file .xlsx" />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn green darken-2 waves-effect" style="width:100%">
+                        <i class="material-icons left">cloud_upload</i>Upload
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Cột phải: Danh sách Values với DataTables -->
+    <div class="col s12 m8">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">
+                    Values của Key: <strong>@Model.MasterDataKeyName</strong>
+                    <span class="badge brown white-text new">@Model.MasterDataValues.Count</span>
+                </span>
+
+                <table id="valueTable" class="stripe hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Value Name</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th>Giá (VND)</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var val in Model.MasterDataValues)
+                        {
+                            <tr>
+                                <td>@val.Name</td>
+                                <td>
+                                    <span class="badge @(val.IsActive ? "green" : "grey") white-text new">
+                                        @(val.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>@val.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (val.Price.HasValue)
+                                    {
+                                        <span class="brown-text">@val.Price.Value.ToString("N0") ₫</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="grey-text">Thỏa thuận</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn-small brown waves-effect"
+                                        onclick="editValue('@val.UniqueId','@val.Name',@val.IsActive.ToString().ToLower(),@(val.Price.HasValue ? val.Price.Value.ToString() : "null"))"
+                                        title="Sửa">
+                                        <i class="material-icons">edit</i>
+                                    </button>
+                                    <form asp-action="ToggleMasterValue" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id"      value="@val.UniqueId" />
+                                        <input type="hidden" name="name"    value="@val.Name" />
+                                        <input type="hidden" name="isActive" value="@val.IsActive" />
+                                        <input type="hidden" name="keyId"   value="@Model.MasterDataKeyId" />
+                                        <input type="hidden" name="keyName" value="@Model.MasterDataKeyName" />
+                                        <button type="submit"
+                                            class="btn-small @(val.IsActive ? "orange" : "green") waves-effect">
+                                            <i class="material-icons">@(val.IsActive ? "visibility_off" : "visibility")</i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (!Model.MasterDataValues.Any())
+                {
+                    <div class="center-align" style="padding:30px">
+                        <i class="material-icons grey-text large">inbox</i>
+                        <p class="grey-text">Chưa có Value nào. Thêm thủ công hoặc Upload Excel.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($('#valueTable tbody tr').length > 0) {
+                $('#valueTable').DataTable({
+                    language: {
+                        search: "Tìm kiếm:",
+                        lengthMenu: "Hiển thị _MENU_ dòng",
+                        info: "Hiển thị _START_ đến _END_ / _TOTAL_ dòng",
+                        paginate: { previous: "Trước", next: "Sau" }
+                    }
+                });
+            }
+        });
+
+        function editValue(id, name, isActive, price) {
+            document.getElementById('ValUniqueId').value = id;
+            document.getElementById('ValName').value     = name;
+            document.getElementById('ValIsActive').checked = (isActive === 'true');
+            var priceField = document.getElementById('ValPrice');
+            if (priceField) priceField.value = (price !== null && price !== undefined) ? price : '';
+            M.updateTextFields();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetValueForm() {
+            document.getElementById('ValUniqueId').value = '';
+            document.getElementById('ValName').value     = '';
+            document.getElementById('ValIsActive').checked = true;
+            var priceField = document.getElementById('ValPrice');
+            if (priceField) priceField.value = '';
+            M.updateTextFields();
+        }
+
+        function updateFileName(input) {
+            var fileName = input.files[0] ? input.files[0].name : '';
+            document.getElementById('fileNameDisplay').value = fileName;
+        }
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,153 @@
+@using Microsoft.AspNetCore.Identity
+@using ASC.Model
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@{
+    Layout = "_MasterLayout";
+    var user = await UserManager.GetUserAsync(User);
+    var displayName = user?.FirstName ?? User.Identity?.Name ?? "User";
+    var userEmail = user?.Email ?? "";
+}
+<header class="secureLayout">
+    <nav class="top-nav blue-grey lighten-1">
+        <div class="nav-wrapper row valign-wrapper">
+            <div class="col s12 valign-wrapper">
+                <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                <h5><a class="page-title">Automobile Service Center</a></h5>
+            </div>
+        </div>
+    </nav>
+    <ul id="nav-mobile" class="sidenav sidenav-fixed">
+        <li>
+            <div class="user-view">
+                <div class="background blue-grey lighten-1"></div>
+                <a href="/Accounts/Account/Profile"><img class="circle" src="~/images/male.jpg" alt="user"></a>
+                <a href="/Accounts/Account/Profile"><span class="white-text name">@displayName</span></a>
+                <a href="#!email"><span class="white-text email">@userEmail</span></a>
+            </div>
+        </li>
+        <li>
+            <a class="collapsible-header waves-effect" href="/ServiceRequests/Dashboard/Dashboard">
+                <i class="material-icons">dashboard</i>Dashboard
+            </a>
+        </li>
+        @if (User.IsInRole("Admin"))
+        {
+            <li>
+                <ul class="collapsible collapsible-accordion">
+                    <li>
+                        <a class="collapsible-header waves-effect">
+                            User Administration <i class="material-icons">supervisor_account</i>
+                        </a>
+                        <div class="collapsible-body">
+                            <ul>
+                                <li><a href="/Accounts/Account/Customers"><i class="material-icons">account_box</i>Customers</a></li>
+                                <li><a href="/Accounts/Account/ServiceEngineers"><i class="material-icons">engineering</i>Service Engineers</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <ul class="collapsible collapsible-accordion">
+                    <li>
+                        <a class="collapsible-header waves-effect">
+                            Configuration <i class="material-icons">perm_data_setting</i>
+                        </a>
+                        <div class="collapsible-body">
+                            <ul>
+                                <li><a href="/Configuration/MasterData/MasterKeys"><i class="material-icons">vpn_key</i>Master Data</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </li>
+        }
+        @if (User.IsInRole("User"))
+        {
+            <li>
+                <a class="collapsible-header waves-effect" href="/ServiceRequests/ServiceRequest/ServiceRequest">
+                    <i class="material-icons">add_circle</i>New Service Request
+                </a>
+            </li>
+        }
+        <li>
+            <a class="collapsible-header waves-effect" href="/Accounts/Account/Profile">
+                <i class="material-icons">account_circle</i>My Profile
+            </a>
+        </li>
+        <li>
+            <a class="collapsible-header waves-effect" href="/Identity/Account/Manage/ChangePassword">
+                <i class="material-icons">lock</i>Change Password
+            </a>
+        </li>
+        <li>
+            <div class="collapsible-header waves-effect" id="ancrLogout" style="cursor:pointer;">
+                <i class="material-icons">exit_to_app</i>Logout
+            </div>
+        </li>
+    </ul>
+</header>
+
+<main class="secureLayout">
+    <div class="row margin-bottom-0px">
+        <div class="col s12">
+            @RenderBody()
+        </div>
+    </div>
+</main>
+
+<footer class="page-footer blue-grey lighten-1 secureLayout">
+    <div class="container">
+        <div class="row">
+            <div class="col l6 s12">
+                <h5 class="white-text">About Us</h5>
+                <p class="grey-text text-lighten-4">
+                    Automobile Service Center is certified Company to perform car services. Our
+                    Workshop operations started in the month of October, 2010.
+                    We primarily focus on providing better services to our customers, and as a
+                    result of the hard work we were awarded as the "Best Service" for the year 2008.
+                </p>
+            </div>
+            <div class="col l3 s12">
+                <h5 class="white-text">Additional Services</h5>
+                <ul>
+                    <li><a class="white-text" href="#!">Services</a></li>
+                    <li><a class="white-text" href="#!">Finance</a></li>
+                    <li><a class="white-text" href="#!">Used Cars</a></li>
+                    <li><a class="white-text" href="#!">Insurance</a></li>
+                    <li><a class="white-text" href="#!">Driving School</a></li>
+                </ul>
+            </div>
+            <div class="col l3 s12">
+                <h5 class="white-text">Connect</h5>
+                <ul>
+                    <li><a class="white-text" href="#!">Facebook</a></li>
+                    <li><a class="white-text" href="#!">LinkedIn</a></li>
+                    <li><a class="white-text" href="#!">Twitter</a></li>
+                    <li><a class="white-text" href="#!">Youtube</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="footer-copyright row margin-bottom-0px">
+        <div class="col s12">
+            Powered by <a class="brown-text text-lighten-3" href="http://materializecss.com">Materialize</a>
+        </div>
+    </div>
+</footer>
+
+<form id="logout_form" asp-area="Identity" asp-page="/Account/Logout" method="post" style="display:none">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}
+<script>
+    $(function () {
+        $('#ancrLogout').click(function () { $('#logout_form').submit(); });
+        $('.collapsible').collapsible();
+        $('.sidenav').sidenav();
+    });
+</script>

@@ -1,0 +1,131 @@
+@model ASC.Web.Areas.Accounts.Models.CustomerViewModel
+@{
+    Layout = "~/Views/Shared/_SecureLayout.cshtml";
+    ViewData["Title"] = "Customers";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h4 class="brown-text"><i class="material-icons left">people</i>Customers</h4>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="row"><div class="col s12">
+        <div class="card-panel green lighten-4 green-text text-darken-2 auto-dismiss">
+            <i class="material-icons tiny">check_circle</i> @TempData["Success"]
+        </div>
+    </div></div>
+}
+
+<div class="row">
+    <!-- Form cập nhật trạng thái -->
+    <div class="col s12 m4">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Cập nhật trạng thái</span>
+                <p class="grey-text" style="font-size:12px">
+                    Khách hàng tự đăng ký. Admin chỉ có thể Active/Deactive.
+                </p>
+                <form asp-action="Customers" method="post" id="customerForm">
+                    @Html.AntiForgeryToken()
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input asp-for="Registration.Email" type="email" id="CustEmail"
+                               class="validate" readonly />
+                        <label asp-for="Registration.Email" for="CustEmail" class="active">Email</label>
+                    </div>
+
+                    <div style="margin:10px 0">
+                        <label>
+                            <input asp-for="Registration.IsActive" type="checkbox" id="CustIsActive" />
+                            <span>Active</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn brown darken-2 waves-effect" style="width:100%">
+                        <i class="material-icons left">update</i>Cập nhật
+                    </button>
+                    <button type="button" class="btn-flat waves-effect" style="width:100%;margin-top:5px"
+                        onclick="resetCustomerForm()">Reset</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách customers với DataTables -->
+    <div class="col s12 m8">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Danh sách Khách hàng</span>
+                <table id="customerTable" class="stripe hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Tên</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cust in Model.Customers)
+                        {
+                            <tr>
+                                <td>@cust.Email</td>
+                                <td>@cust.FirstName @cust.LastName</td>
+                                <td>
+                                    <span class="badge @(cust.IsActive ? "green" : "red") white-text new">
+                                        @(cust.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn-small @(cust.IsActive ? "orange" : "green") waves-effect"
+                                        onclick="selectCustomer('@cust.Email', @cust.IsActive.ToString().ToLower())">
+                                        @(cust.IsActive ? "Deactivate" : "Activate")
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (!Model.Customers.Any())
+                {
+                    <p class="center-align grey-text" style="padding:20px">
+                        Chưa có khách hàng nào. Khách hàng đăng ký tại trang Register.
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($('#customerTable tbody tr').length > 0) {
+                $('#customerTable').DataTable({
+                    language: {
+                        search: "Tìm kiếm:",
+                        lengthMenu: "Hiển thị _MENU_ dòng",
+                        info: "Hiển thị _START_ đến _END_ / _TOTAL_ dòng",
+                        paginate: { first: "Đầu", last: "Cuối", next: "Sau", previous: "Trước" }
+                    }
+                });
+            }
+        });
+
+        function selectCustomer(email, isActive) {
+            document.getElementById('CustEmail').value = email;
+            document.getElementById('CustIsActive').checked = !isActive;
+            M.updateTextFields();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetCustomerForm() {
+            document.getElementById('CustEmail').value = '';
+            document.getElementById('CustIsActive').checked = false;
+        }
+    </script>
+}

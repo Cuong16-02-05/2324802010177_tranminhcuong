@@ -1,0 +1,32 @@
+@page
+@model ASC.Web.Areas.Identity.Pages.Account.ExternalLoginModel
+@{
+    ViewData["Title"] = "External Login";
+    Layout = "~/Views/Shared/_MasterLayout.cshtml";
+}
+<div class="row" style="min-height:100vh;background:linear-gradient(135deg,#4e342e,#795548);display:flex;align-items:center;margin:0">
+    <div class="col s12 m6 l4" style="margin:0 auto">
+        <div class="card" style="border-radius:12px">
+            <div class="card-content center-align" style="padding:30px">
+                <i class="material-icons brown-text" style="font-size:60px">account_circle</i>
+                <h5>Xác nhận Email</h5>
+                <p class="grey-text">Đăng nhập thành công từ <strong>@Model.ProviderDisplayName</strong></p>
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="card-panel red lighten-4 red-text">@Model.ErrorMessage</div>
+                }
+                <form method="post" asp-page-handler="Confirmation">
+                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                    <div class="input-field">
+                        <input asp-for="Input.Email" type="email" id="email" class="validate" />
+                        <label for="email">Email</label>
+                        <span asp-validation-for="Input.Email" class="red-text helper-text"></span>
+                    </div>
+                    <button type="submit" class="btn brown darken-2 waves-effect" style="width:100%">
+                        Xác nhận
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

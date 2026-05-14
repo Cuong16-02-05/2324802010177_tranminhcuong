@@ -1,0 +1,57 @@
+@page
+@model ASC.Web.Areas.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = "~/Views/Shared/_MasterLayout.cshtml";
+}
+
+<div class="row" style="min-height:100vh; background:linear-gradient(135deg,#4e342e,#795548); display:flex; align-items:center; margin:0">
+    <div class="col s12 m6 l4" style="margin:0 auto">
+        <div class="card" style="border-radius:12px; overflow:hidden">
+            <div class="card-content brown darken-2 white-text center-align" style="padding:25px">
+                <i class="material-icons" style="font-size:50px">person_add</i>
+                <h5>Create Account</h5>
+                <p style="opacity:.8; margin:0">Automobile Service Center</p>
+            </div>
+            <div class="card-content" style="padding:25px">
+                <form method="post">
+                    <div asp-validation-summary="ModelOnly" class="red-text"></div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">person</i>
+                        <input asp-for="Input.FirstName" id="fname" class="validate" />
+                        <label for="fname">First Name</label>
+                        <span asp-validation-for="Input.FirstName" class="helper-text red-text"></span>
+                    </div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input asp-for="Input.Email" id="email" type="email" class="validate" />
+                        <label for="email">Email</label>
+                        <span asp-validation-for="Input.Email" class="helper-text red-text"></span>
+                    </div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">lock</i>
+                        <input asp-for="Input.Password" id="pwd" type="password" class="validate" />
+                        <label for="pwd">Password (min 6 chars + digit)</label>
+                        <span asp-validation-for="Input.Password" class="helper-text red-text"></span>
+                    </div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">lock_outline</i>
+                        <input asp-for="Input.ConfirmPassword" id="cpwd" type="password" class="validate" />
+                        <label for="cpwd">Confirm Password</label>
+                        <span asp-validation-for="Input.ConfirmPassword" class="helper-text red-text"></span>
+                    </div>
+                    <button type="submit" class="btn brown darken-2 waves-effect" style="width:100%; margin-top:10px">
+                        <i class="material-icons left">how_to_reg</i>Register
+                    </button>
+                </form>
+                <div class="center-align" style="margin-top:15px">
+                    <a asp-page="./Login" class="brown-text">Already have an account? Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

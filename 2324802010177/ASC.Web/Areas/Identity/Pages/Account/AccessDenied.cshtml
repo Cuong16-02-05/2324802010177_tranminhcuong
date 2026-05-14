@@ -1,0 +1,16 @@
+@page
+@model Microsoft.AspNetCore.Mvc.RazorPages.PageModel
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = "~/Views/Shared/_MasterLayout.cshtml";
+}
+<div class="row" style="min-height:80vh; display:flex; align-items:center;">
+    <div class="col s12 center-align">
+        <i class="material-icons red-text" style="font-size:80px">block</i>
+        <h4>Access Denied</h4>
+        <p class="grey-text">You do not have permission to view this page.</p>
+        <a href="/ServiceRequests/Dashboard/Dashboard" class="btn brown darken-2 waves-effect">
+            <i class="material-icons left">home</i>Go to Dashboard
+        </a>
+    </div>
+</div>

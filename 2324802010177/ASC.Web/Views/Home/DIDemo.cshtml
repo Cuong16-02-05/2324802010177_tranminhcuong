@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Dependency Injection Demo";
+    Layout = "_Layout";
+}
+<div class="container" style="margin-top:30px">
+    <h4 class="brown-text">Lab 1 — DI Lifetime Demo</h4>
+    <div class="row">
+        <div class="col s12 m4"><div class="card red lighten-4"><div class="card-content">
+            <span class="card-title red-text">Transient</span>
+            <table class="striped">
+                <tr><td>Instance 1</td><td><strong>@ViewBag.Transient1</strong></td></tr>
+                <tr><td>Instance 2</td><td><strong>@ViewBag.Transient2</strong></td></tr>
+            </table>
+            <div class="chip @(ViewBag.TransientSame ? "green" : "red") white-text" style="margin-top:10px">
+                @(ViewBag.TransientSame ? "✓ Same" : "✗ Different (correct!)")
+            </div>
+        </div></div></div>
+        <div class="col s12 m4"><div class="card blue lighten-4"><div class="card-content">
+            <span class="card-title blue-text">Scoped</span>
+            <table class="striped">
+                <tr><td>Instance 1</td><td><strong>@ViewBag.Scoped1</strong></td></tr>
+                <tr><td>Instance 2</td><td><strong>@ViewBag.Scoped2</strong></td></tr>
+            </table>
+            <div class="chip @(ViewBag.ScopedSame ? "green" : "red") white-text" style="margin-top:10px">
+                @(ViewBag.ScopedSame ? "✓ Same (correct!)" : "✗ Different")
+            </div>
+        </div></div></div>
+        <div class="col s12 m4"><div class="card green lighten-4"><div class="card-content">
+            <span class="card-title green-text">Singleton</span>
+            <table class="striped">
+                <tr><td>Instance 1</td><td><strong>@ViewBag.Singleton1</strong></td></tr>
+                <tr><td>Instance 2</td><td><strong>@ViewBag.Singleton2</strong></td></tr>
+            </table>
+            <div class="chip @(ViewBag.SingletonSame ? "green" : "red") white-text" style="margin-top:10px">
+                @(ViewBag.SingletonSame ? "✓ Same (correct!)" : "✗ Different")
+            </div>
+        </div></div></div>
+    </div>
+    <a href="/" class="btn-flat brown-text"><i class="material-icons left">arrow_back</i>Back</a>
+</div>
